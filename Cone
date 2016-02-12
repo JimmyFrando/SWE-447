@@ -1,0 +1,82 @@
+var Cone = 
+{
+	//object properties
+	positions : 
+	{ 
+		numComponents : 3
+	},
+
+	indices : {},
+
+	program : undefined,
+
+	init : function() 
+	{
+		//the code to initialize our object. This will be called from the main
+		//JS file's init method. 
+
+		var numSides = 8;
+		var dTheta = 2.0 * Math.PI / numSides
+
+		positions = { 0.0, 0.0, 0.0 }; //initialize positions list with center point at origin
+		indices = [ 0 ]; // initialize indicies list with center of triangle fan, or first vertex # to render
+
+		for ( var i = 0; i < numSides; ++i ) 
+		{
+			var theta = i * dTheta;
+			var x = Math.cos( theta ),
+				y = Math.sin( theta ),
+				z = 0.0;
+
+			positions.push( x, y, z )
+			indices.push( i + 1 );
+
+		}
+
+		indices.push( 1 ); // Add first perimeters vertex to close the disk
+		positions.push( 0.0, 0.0, 1.0 ); //Add apex point of cone to list
+
+		indices = indices.concat(indices); //Copies the indices in the list and pushes it onto the list
+		indicies[numSides + 2 ] = numSides + 1; // go to the First value in the copied indicies and have it equal 9
+
+		//Once done listing indices, initialize object's shader program
+		this.program = initShaders( gl, "Cone-vertex-shader", "cone-fragment-shader" );
+
+		//Create a vertex buffer for vertex positions
+		this.positions.buffer = gl.createBuffer();
+		gl.bindBuffer( gl.ARRAY_BUFFER, this.positions.buffer );
+		gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( positions ), gl.STATIC_DRAW );
+
+		//Create an indicies buffer for the indicies
+		this.indices.buffer = gl.createBuffer();
+		gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.indices.buffer );
+		gl.bufferData( gl.ELEMENT_ARRAY_BUFFER, new Uint16Array( indices ), gl.STATIC_DRAW );
+
+		//Querys any vertex attribute locations from shader program
+		this.positions.attribute = gl.getAttribLocation( this.program, "vPosition" );
+
+	},
+
+	draw : function () {
+		// code to render our object including all of the necessary WebGL
+
+		//Selects shader program we want to render (this one)
+		gl.useProgram( this.program );
+
+		//Binds and plumbs position attribute 
+		gl.bindBuffer( gl.ARRAY_BUFFER, this.positions.buffer );
+		gl.vertexAttribPointer( this.positions.attribute, this.positions.numComponents, gl.FLOAT, gl.FALSE, 0, 0 );
+		gl.enableVertexAttrib( this.positions.attribute );
+		gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, this.indices.buffer );
+
+		//Render Base of cone
+		var count = 10; // see init(). You'd want a variable for this. ( baseCount ) 
+		var offset = 0; // start at beginning of buffer
+		gl.drawElements( gl.TRIANGLE_FAN, count, gl.UNSIGNED_SHORT, offset );
+
+		//Render cone part of cone
+		count = 10; //same number of indices for cone asthe bast ( still want a variable)
+		offset = 10 * /* sizeof(unsigned short) = */ 2;
+		gl.drawElements( gl.TRIANGLE_FAN, count, gl.UNSIGNED_SHORT, offset );
+	},
+};
